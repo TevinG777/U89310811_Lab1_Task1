@@ -7,6 +7,7 @@ pollingCounter = 0
 encoderReading = 0
 totalRadtoRemove = 0
 stepNumber = 0
+lastFuntion = ''
 
 
 max_linear_velocity = 1.118
@@ -30,6 +31,7 @@ def rotate(desiredHeading, speed, stepNum):
         return stepNumber
     
     
+    
     # normalize the 0-360 degree heading to -180 to 180 degrees in order to calculate the shortest path
     tmpDesiredHeading = (desiredHeading + 180) % 360 -180
     
@@ -39,44 +41,82 @@ def rotate(desiredHeading, speed, stepNum):
     # normalize the current heading to -180 to 180 degrees
     tmpCurrentHeading = (currentHeading + 180) % 360 -180
     
-    
-    
-    
     # Determine if it is faster to turn right or left
     if tmpDesiredHeading - tmpCurrentHeading > 0:
+        
+        # if the desired heading is greater than the current heading, turn right
         leftSpeed = -speed
         rightSpeed = speed
         robot.set_left_motors_velocity(leftSpeed)
         robot.set_right_motors_velocity(rightSpeed)
         
-        print("Current Heading: ", tmpCurrentHeading)
-        print("Desired Heading: ", tmpDesiredHeading)
+        # Calculate the angular velocity of the robot in order to determine the time it will take to reach the desired heading
+        # Convert the angular velocity to linear velocity
+        V_L = robot.wheel_radius * leftSpeed
+        V_R = robot.wheel_radius * rightSpeed
         
+        # Calculate the angular velocity of the robot
+        angularVelocity = (V_R - V_L)/robot.axel_length
+        
+        # Calculate the time it will take to reach the desired heading (2pi/|angular velocity|) also make sure angular velo is positivie
+        estTime = 2*math.pi / math.abs(angularVelocity)
+        
+        # Call the announce values function to print out the values
+        printAnnounceValues(rotate, leftSpeed, rightSpeed, estTime, 0)
+        
+        # Call the nav print values function to print out the values
+        printNavValues(leftSpeed, rightSpeed, 0, robot.experiment_supervisor.getTime())
+        
+        # if the robot has reached the desired heading, stop the robot and update the step number to move to the next step
         if(robot.get_compass_reading() >= desiredHeading):
             robot.stop()
+            
+            # print new line to make output look nicer
+            print('\n')
+            
             stepNumber += 1
 
+    
             return 1
     else:
+        # if the desired heading is less than the current heading, turn left
         leftSpeed = speed
         rightSpeed = -speed
         robot.set_left_motors_velocity(leftSpeed)
         robot.set_right_motors_velocity(rightSpeed)
         
+        # Calculate the angular velocity of the robot in order to determine the time it will take to reach the desired heading
+        # Convert the angular velocity to linear velocity
+        V_L = robot.wheel_radius * leftSpeed
+        V_R = robot.wheel_radius * rightSpeed
+        
+        # Calculate the angular velocity of the robot
+        angularVelocity = (V_R - V_L)/robot.axel_length
+        
+        # Calculate the time it will take to reach the desired heading (2pi/|angular velocity|) also make sure angular velo is positivie
+        estTime = 2*math.pi / math.abs(angularVelocity)
+        
+        # Call the announce values function to print out the values
+        printAnnounceValues(rotate, leftSpeed, rightSpeed, estTime, 0)
+        
+        # Call the nav print values function to print out the values
+        printNavValues(leftSpeed, rightSpeed, 0, robot.experiment_supervisor.getTime())
+        
+        # if the robot has reached the desired heading, stop the robot and update the step number to move to the next step
         if(robot.get_compass_reading() <= desiredHeading):
             robot.stop()
+            
+            # print new line to make output look nicer
+            print('\n')
             stepNumber += 1
             
             return 1
-    
         
-def moveForward(startingX, startingY, endingX, endingY, velo, distanceOffset, stepNum):
+def moveForward(desiredHeading, startingX, startingY, endingX, endingY, velo, distanceOffset, stepNum):
     
-    global pollingCounter
     global encoderReading
     global stepNumber
     
-    #
     
     if stepNum == stepNumber:
         pass
@@ -100,34 +140,35 @@ def moveForward(startingX, startingY, endingX, endingY, velo, distanceOffset, st
     # Only print out the values if the funtion has not yet be completed
     if accumulatedDis < distance + encoderOffset:
         
-        # Set the motors to max speed (26 Rad/s)
+        # Set the motors to the desired speed
         robot.set_right_motors_velocity(velo)
         robot.set_left_motors_velocity(velo)
         
+    # Calculate the estimated time it will take to reach the desired distance
+    estTime = distance/(velo*robot.wheel_radius)
         
+    # print out the values
+    printAnnounceValues(moveForward, velo, velo, estTime, distance)
+    printNavValues(velo, velo, distance, robot.experiment_supervisor.getTime())
         
-        # Print out the robot metrics every 5 polling cycles
-        if pollingCounter % 10 == 0:
-            # print out robot metrics every multiple of 5 to reduce the amount of output
-            print(f"V_li: {velo:.1f}, V_ri: {velo:.1f}, D_i: {accumulatedDis:.2f}, T_i: {robot.experiment_supervisor.getTime():.2f}")
         
     # if the robot has traveled the distance, stop the robot
     if(accumulatedDis > distance+distanceOffset+encoderOffset):
         # Stop the robot and update the encoder readings only on the first time accumulatedDis > distance
         if accumulatedDis < distance+distanceOffset + 0.05 + encoderReading:
-            # stop the robot and exit
             
-            print(f"V_li: {velo:.1f}, V_ri: {velo:.1f}, D_i: {accumulatedDis:.2f}, T_i: {robot.experiment_supervisor.getTime():.2f}")
-            
+            # update the step number and encoder reading and stop the robot
             stepNumber += 1
             encoderReading = robot.get_front_right_motor_encoder_reading()
-            print("Got here")
+            
+            # print new line to make output look nicer
+            print('\n')
+            
             robot.stop()
+            
         return 1
         
-    pollingCounter += 1
-    
-def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, stepNum):
+def curvedTurn(desiredHeading, radius, rads, direction, maxSpeed, distanceOffset, stepNum):
     global encoderReading
     global pollingCounter 
     global stepNumber
@@ -165,120 +206,62 @@ def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, stepNum):
     encoderOffset = robot.wheel_radius * encoderReading
     
     
-    # Only print out the values if the funtion has not yet be completed
+    # Set the motors to calculated speed
     if accumulatedDis < rightDistance + encoderOffset :
-        if pollingCounter % 10 == 0:
-            robot.set_left_motors_velocity(VeloLeft)
-            robot.set_right_motors_velocity(VeloRight)
-            print(f"V_li: {VeloLeft:.1f}, V_ri: {VeloRight:.1f}, D_i: {accumulatedDis:.2f}, T_i: {robot.experiment_supervisor.getTime():.2f}")
-        
-    
-    
-    
+        robot.set_left_motors_velocity(VeloLeft)
+        robot.set_right_motors_velocity(VeloRight)
+
     
     # if the robot has traveled the distance, stop the robot
     if(accumulatedDis > rightDistance+encoderOffset + distanceOffset):
         # Stop the robot and update the encoder readings only on the first time accumulatedDis > distance
         if accumulatedDis < distance + encoderReading + distanceOffset:
-            # stop the robot and exit
-            print(f"V_li: {VeloLeft:.1f}, V_ri: {VeloRight:.1f}, D_i: {accumulatedDis:.2f}, T_i: {robot.experiment_supervisor.getTime():.2f}")
+
+            # update the step number and encoder reading and stop the robot
             stepNumber += 1
             encoderReading = robot.get_front_right_motor_encoder_reading()
 
             robot.stop()
         return 1
         
-    pollingCounter += 1
+def printNavValues(VeloLeft, VeloRight, distance, time):
+    print('V_li = {%0.1f}, V_ri = {%0.1f}, D = {%0.1f}, T = {%0.1f}' % (VeloLeft, VeloRight, distance, time))
+    
+def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance):
+    global lastFuntion
+    
+    if lastFuntion == func:
+        return
+    print('---------------------------------')
+    print("VeloLeft: ", VeloLeft)
+    print("VeloRight: ", VeloRight)
+    print("Estimated Time: ", estimatedTime)
+    print("Distance: ", distance)
+    print('---------------------------------')
+    print('\n')
+    
+    # update the last function called to prevent multiple print statements
+    lastFuntion = func
 
+    
+
+def callFunction(func, *args):
+    global stepNumber
+    
+    if func == moveForward and args[-1] == stepNumber:
+        func(*args)
+        
+    elif func == rotate and args[-1] == stepNumber:
+        func(*args)
+        
+    elif func == curvedTurn and args[-1] == stepNumber:
+        func(*args)
+    
 # Main Control Loop for Robot
 while robot.experiment_supervisor.step(robot.timestep) != -1:
+    pass
     
-    if(stepCounter == 0):
-        # Print out V_ri and V_Li
-        print("Moving from P0 to P1 with velocities:")
-        print("V_ri = ", 20)
-        print("V_Li = ", 20)
-        stepCounter += 1
-    
-    # Pass starting x,y coords as well as a distance offset to account for momentum and set it as the 0st step
-    nextCounter = moveForward(2.0, -2.0, 2.0, -0.5, 20, -0.05, 0)
-    
-    # After the robot has moved we need to proceed to P2
-    if stepCounter == 1 and nextCounter == 1:
-        # Print out V_ri and V_Li
-        print("Moving from P1 to P2 with velocities:")
-        print("V_ri =  Need to change")
-        print("V_ri =  Need to change")
-        stepCounter += 1
-        nextCounter = 0
-    
-    # add offset to the left turn to account for momentum and set it as the 1st step
-    nextCounter = curvedTurn(0.5, math.pi, "left", 8, -0.07,1)
-    
-    # after make sure the robot is facing 270 degrees
-    if stepCounter == 2 and nextCounter == 1:
-        # Print out V_ri and V_Li
-        print("Rotating to 270 degrees with velocities:")
-        print("V_ri =  Need to change")
-        print("V_ri =  Need to change")
-        stepCounter += 1
-        nextCounter = 0
-        
-    # rotate the robot to 270 degrees
-    nextCounter = rotate(270, 4, 2)
-    
-    # After the robot has moved we need to proceed to P3
-    if stepCounter == 3 and nextCounter == 1:
-        # Print out V_ri and V_Li
-        print("Moving from P2 to P3 with Velocities:")
-        print("V_ri =  Need to change")
-        print("V_ri =  Need to change")
-        stepCounter += 1
-    # add offset to the right turn to account for momentum and set it as the 1st step
-    nextCounter = curvedTurn(1.5, math.pi, "right", 10, -0.07,3)
-    
-    # after make sure the robot is facing 90 degrees
-    if stepCounter == 4 and nextCounter == 1:
-        # Print out V_ri and V_Li
-        print("Rotating to 90 degrees with velocities:")
-        print("V_ri =  Need to change")
-        print("V_ri =  Need to change")
-        stepCounter += 1
-        nextCounter = 0
-    nextCounter = rotate(90, 4, 4)
-    
-    if(stepCounter == 5 and nextCounter == 1):
-        # Print out V_ri and V_Li
-        print("Moving from P3 to P4 with velocities:")
-        print("V_ri = ", 20)
-        print("V_Li = ", 20)
-        stepCounter += 1
-        nextCounter = 0
-    
-    # Pass starting x,y coords as well as a distance offset to account for momentum and set it as the 0st step
-    nextCounter = moveForward(-2.0, -0.5, -2.0, 2, 20, -0.05, 5)
-    
-    # Rotate the robot to 0 degrees
-    if stepCounter == 6 and nextCounter == 1:
-        # Print out V_ri and V_Li
-        print("Rotating to 0 degrees with velocities from P4 to P5:")
-        print("V_ri =  Need to change")
-        print("V_ri =  Need to change")
-        stepCounter += 1
-        nextCounter = 0
-    nextCounter = rotate(0, 4, 6)
-    
-    if(stepCounter == 7 and nextCounter == 1):
-        # Print out V_ri and V_Li
-        print("Moving from P3 to P4 with velocities:")
-        print("V_ri = ", 20)
-        print("V_Li = ", 20)
-        stepCounter += 1
-        nextCounter = 0
-    
-    # Pass starting x,y coords as well as a distance offset to account for momentum and set it as the 0st step
-    nextCounter = moveForward(-2.0, 2, 1.5, 2, 20, -0.3, 7)
-    
+
     
 
     robot.experiment_supervisor.getTime()

@@ -311,7 +311,7 @@ def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance, point
     print("Moving from: P%d, to P%d with velocities"  % (point1, point2))
     print("VeloLeft: ", VeloLeft)
     print("VeloRight: ", VeloRight)
-    print("Estimated Time: %0.1f" % (estimatedTime))
+    print("Estimated Time: %0.1f" % (math.fabs(estimatedTime)))
     print("Distance: %0.1f" % (distance))
     print('---------------------------------')
     print('\n')
@@ -337,27 +337,28 @@ while robot.experiment_supervisor.step(robot.timestep) != -1:
     callFunction(moveForward, 2, -2, 2, -0.5, 20, -0.045, 0, 1, 0)
     
     # Ensure the robot is facing the correct direction before moving (func, desiredHeading, speed, point1, point2, adjust, stepNum)
-    callFunction(rotate, 90, 2, 0, 1, 1, 1)
+    callFunction(rotate, 90, 1, 0, 1, 1, 1)
     
     # Move from point P1 to P2, left turn at 8 rad/sec
     callFunction(curvedTurn, 0.5, math.pi, 'left', 8, -0.045, 1, 2, 2)
     
     # adjust the heading of the robot to be 270 degrees 
-    callFunction(rotate, 270, 2, 1, 2, 1, 3)
+    callFunction(rotate, 270, 1, 1, 2, 1, 3)
     
     # Move from point P2 to P3 with velocity with 10 rad/sec
     callFunction(curvedTurn, 1.5, math.pi, 'right', 10, -0.1, 2, 3, 4)
     
     # Adjust the heading of the robot to be 90 degrees
-    callFunction(rotate, 90, 2, 2, 3, 1, 5)
+    callFunction(rotate, 90, 1, 2, 3, 1, 5)
     
     # Move from point P3 to P4 with velocity 20 rad/sec
-    callFunction(moveForward, -2, -0.5, -2, 2, 20, -0.045, 3, 4, 6)
+    callFunction(moveForward, -2, -0.5, -2, 2, 20, -0.16, 3, 4, 6)
     
     # Move from poimt P4 to P5 with velocity 4 rad/sec
     callFunction(rotate, 0, 2, 4, 5, 0, 7)
     
-    
+    # Move from point P5 to P6 with velocity 20 rad/sec
+    callFunction(moveForward, -2, 2, 1.5, 2, 20, -0.35, 5, 6, 8)
 
     
 

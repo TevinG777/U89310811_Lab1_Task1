@@ -22,7 +22,7 @@ robot.load_environment(maze_file)
 # Move robot to a random staring position listed in maze file
 robot.move_to_start()
 
-def rotate(desiredHeading, speed, stepNum):
+def rotate(desiredHeading, speed, point1, point2, stepNum):
     global stepNumber
     
     if stepNum == stepNumber:
@@ -62,7 +62,7 @@ def rotate(desiredHeading, speed, stepNum):
         estTime = 2*math.pi / math.abs(angularVelocity)
         
         # Call the announce values function to print out the values
-        printAnnounceValues(rotate, leftSpeed, rightSpeed, estTime, 0)
+        printAnnounceValues(rotate, leftSpeed, rightSpeed, estTime, point1, point2, 0)
         
         # Call the nav print values function to print out the values
         printNavValues(leftSpeed, rightSpeed, 0, robot.experiment_supervisor.getTime())
@@ -112,7 +112,7 @@ def rotate(desiredHeading, speed, stepNum):
             
             return 1
         
-def moveForward(desiredHeading, startingX, startingY, endingX, endingY, velo, distanceOffset, stepNum):
+def moveForward(startingX, startingY, endingX, endingY, velo, distanceOffset, point1, point2, stepNum):
     
     global encoderReading
     global stepNumber
@@ -148,8 +148,8 @@ def moveForward(desiredHeading, startingX, startingY, endingX, endingY, velo, di
     estTime = distance/(velo*robot.wheel_radius)
         
     # print out the values
-    printAnnounceValues(moveForward, velo, velo, estTime, distance)
-    printNavValues(velo, velo, distance, robot.experiment_supervisor.getTime())
+    printAnnounceValues(moveForward, velo, velo, estTime, distance, point1, point2)
+    printNavValues(velo, velo, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime())
         
         
     # if the robot has traveled the distance, stop the robot
@@ -168,7 +168,7 @@ def moveForward(desiredHeading, startingX, startingY, endingX, endingY, velo, di
             
         return 1
         
-def curvedTurn(desiredHeading, radius, rads, direction, maxSpeed, distanceOffset, stepNum):
+def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, point1, point2, stepNum):
     global encoderReading
     global pollingCounter 
     global stepNumber
@@ -210,6 +210,23 @@ def curvedTurn(desiredHeading, radius, rads, direction, maxSpeed, distanceOffset
     if accumulatedDis < rightDistance + encoderOffset :
         robot.set_left_motors_velocity(VeloLeft)
         robot.set_right_motors_velocity(VeloRight)
+        
+    # Calculate the angular velocity of the robot in order to determine the time it will take to reach the desired heading
+    # Convert the angular velocity to linear velocity
+    V_L = robot.wheel_radius * VeloLeft
+    V_R = robot.wheel_radius * VeloRight
+     
+    # Calculate the angular velocity of the robot
+    angularVelocity = (V_R - V_L)/robot.axel_length
+    
+    # Calculate the time it will take to reach the desired heading (2pi/|angular velocity|) also make sure angular velo is positivie
+    estTime = 2*math.pi / math.abs(angularVelocity)
+        
+    # print out the announce values
+    printAnnounceValues(curvedTurn, VeloLeft, VeloRight, estTime, distance, point1, point2)
+    
+    # print out the nav values
+    printNavValues(VeloLeft, VeloRight, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime())
 
     
     # if the robot has traveled the distance, stop the robot
@@ -225,14 +242,15 @@ def curvedTurn(desiredHeading, radius, rads, direction, maxSpeed, distanceOffset
         return 1
         
 def printNavValues(VeloLeft, VeloRight, distance, time):
-    print('V_li = {%0.1f}, V_ri = {%0.1f}, D = {%0.1f}, T = {%0.1f}' % (VeloLeft, VeloRight, distance, time))
+    print('V_li = %0.1f, V_ri = %0.1f, D = %0.1f, T = %0.1f' % (VeloLeft, VeloRight, distance, time))
     
-def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance):
+def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance, point1, point2):
     global lastFuntion
     
     if lastFuntion == func:
         return
     print('---------------------------------')
+    print("Moving from: P%f, to P%f with velocities", point1, point2)
     print("VeloLeft: ", VeloLeft)
     print("VeloRight: ", VeloRight)
     print("Estimated Time: ", estimatedTime)
@@ -259,7 +277,9 @@ def callFunction(func, *args):
     
 # Main Control Loop for Robot
 while robot.experiment_supervisor.step(robot.timestep) != -1:
-    pass
+    # Move from point P1 to P2 with velocity 20 rad/sec
+    callFunction(moveForward, 2, -2, 2, -0.5, 20, -0.045, 0, 1, 0)
+    
     
 
     

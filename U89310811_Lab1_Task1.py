@@ -59,7 +59,7 @@ def rotate(desiredHeading, speed, point1, point2, stepNum):
         angularVelocity = (V_R - V_L)/robot.axel_length
         
         # Calculate the time it will take to reach the desired heading (2pi/|angular velocity|) also make sure angular velo is positivie
-        estTime = 2*math.pi / math.abs(angularVelocity)
+        estTime = 2*math.pi / math.fabs(angularVelocity)
         
         # Call the announce values function to print out the values
         printAnnounceValues(rotate, leftSpeed, rightSpeed, estTime, point1, point2, 0)
@@ -94,10 +94,10 @@ def rotate(desiredHeading, speed, point1, point2, stepNum):
         angularVelocity = (V_R - V_L)/robot.axel_length
         
         # Calculate the time it will take to reach the desired heading (2pi/|angular velocity|) also make sure angular velo is positivie
-        estTime = 2*math.pi / math.abs(angularVelocity)
+        estTime = 2*math.pi / math.fabs(angularVelocity)
         
         # Call the announce values function to print out the values
-        printAnnounceValues(rotate, leftSpeed, rightSpeed, estTime, 0)
+        printAnnounceValues(rotate, leftSpeed, rightSpeed, estTime, point1, point2, 0)
         
         # Call the nav print values function to print out the values
         printNavValues(leftSpeed, rightSpeed, 0, robot.experiment_supervisor.getTime())
@@ -220,7 +220,7 @@ def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, point1, point2
     angularVelocity = (V_R - V_L)/robot.axel_length
     
     # Calculate the time it will take to reach the desired heading (2pi/|angular velocity|) also make sure angular velo is positivie
-    estTime = 2*math.pi / math.abs(angularVelocity)
+    estTime = 2*math.pi / math.fabs(angularVelocity)
         
     # print out the announce values
     printAnnounceValues(curvedTurn, VeloLeft, VeloRight, estTime, distance, point1, point2)
@@ -266,8 +266,6 @@ def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance, point
     # update the last function called to prevent multiple print statements
     lastFuntion = func
 
-    
-
 def callFunction(func, *args):
     global stepNumber
     
@@ -283,7 +281,10 @@ def callFunction(func, *args):
 # Main Control Loop for Robot
 while robot.experiment_supervisor.step(robot.timestep) != -1:
     # Move from point P1 to P2 with velocity 20 rad/sec
-    callFunction(moveForward, 2, -2, 2, -0.5, 26, -0.045, 0, 1, 0)
+    callFunction(moveForward, 2, -2, 2, -0.5, 10, -0.045, 0, 1, 0)
+    
+    # Ensure the robot is facing the correct direction before moving
+    callFunction(rotate, 90, 2, 0, 1, 1)
     
     
 

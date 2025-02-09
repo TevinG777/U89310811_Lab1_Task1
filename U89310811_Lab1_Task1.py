@@ -69,11 +69,14 @@ def rotate(desiredHeading, speed, point1, point2, adjust, stepNum):
         printAnnounceValues(rotate, leftSpeed, rightSpeed, estTime, point1, point2, 0, adjust, desiredHeading)
         
         # Call the nav print values function to print out the values
-        printNavValues(leftSpeed, rightSpeed, 0, robot.experiment_supervisor.getTime())
+        printNavValues(leftSpeed, rightSpeed, 0, robot.experiment_supervisor.getTime() - timeAccumulator)
         
         # if the robot has reached the desired heading, stop the robot and update the step number to move to the next step
         if(robot.get_compass_reading() >= desiredHeading):
             robot.stop()
+            
+            # Call the nav print values function to print out the values
+            printNavValues(leftSpeed, rightSpeed, 0, robot.experiment_supervisor.getTime() - timeAccumulator, skip=1)
             
             # print new line to make output look nicer
             print('\n')
@@ -110,7 +113,7 @@ def rotate(desiredHeading, speed, point1, point2, adjust, stepNum):
         printAnnounceValues(rotate, leftSpeed, rightSpeed, estTime, point1, point2, 0, adjust, desiredHeading)
         
         # Call the nav print values function to print out the values
-        printNavValues(leftSpeed, rightSpeed, 0, robot.experiment_supervisor.getTime())
+        printNavValues(leftSpeed, rightSpeed, 0, robot.experiment_supervisor.getTime() - timeAccumulator, skip=1)
         
         # if the robot has reached the desired heading, stop the robot and update the step number to move to the next step
         if(robot.get_compass_reading() <= desiredHeading):
@@ -165,7 +168,7 @@ def moveForward(startingX, startingY, endingX, endingY, velo, distanceOffset, po
         
     # print out the values
     printAnnounceValues(moveForward, velo, velo, estTime, distance, point1, point2)
-    printNavValues(velo, velo, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime())
+    printNavValues(velo, velo, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime() - timeAccumulator)
         
         
     # if the robot has traveled the distance, stop the robot
@@ -179,6 +182,9 @@ def moveForward(startingX, startingY, endingX, endingY, velo, distanceOffset, po
             
             # Grab the current time and add to the time accumulator
             timeAccumulator += robot.experiment_supervisor.getTime()
+            
+            # print out the values one last time
+            printNavValues(velo, velo, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime() - timeAccumulator, skip=1)
             
             # print new line to make output look nicer
             print('\n')
@@ -245,7 +251,7 @@ def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, point1, point2
     printAnnounceValues(curvedTurn, VeloLeft, VeloRight, estTime, distance, point1, point2)
     
     # print out the nav values
-    printNavValues(VeloLeft, VeloRight, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime())
+    printNavValues(VeloLeft, VeloRight, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime() - timeAccumulator)
 
     
     # if the robot has traveled the distance, stop the robot
@@ -260,12 +266,17 @@ def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, point1, point2
             # Grab the current time and add to the time accumulator
             timeAccumulator += robot.experiment_supervisor.getTime()
 
+            printNavValues(VeloLeft, VeloRight, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime() - timeAccumulator, skip=1)
             robot.stop()
         return 1
         
-def printNavValues(VeloLeft, VeloRight, distance, time):
+def printNavValues(VeloLeft, VeloRight, distance, time, skip = 0):
     global pollingCounter
     
+    if skip == 1:
+        print('V_li = %0.1f, V_ri = %0.1f, D = %0.1f, T = %0.1f' % (VeloLeft, VeloRight, distance, time))
+        pollingCounter += 1
+        return
     # Print out the values every 5 polling cycles
     if pollingCounter % 10 == 0:
         print('V_li = %0.1f, V_ri = %0.1f, D = %0.1f, T = %0.1f' % (VeloLeft, VeloRight, distance, time))

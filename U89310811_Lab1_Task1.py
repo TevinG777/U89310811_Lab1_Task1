@@ -242,7 +242,12 @@ def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, point1, point2
         return 1
         
 def printNavValues(VeloLeft, VeloRight, distance, time):
-    print('V_li = %0.1f, V_ri = %0.1f, D = %0.1f, T = %0.1f' % (VeloLeft, VeloRight, distance, time))
+    global pollingCounter
+    
+    # Print out the values every 5 polling cycles
+    if pollingCounter % 5 == 0:
+        print('V_li = %0.1f, V_ri = %0.1f, D = %0.1f, T = %0.1f' % (VeloLeft, VeloRight, distance, time))
+    pollingCounter += 1
     
 def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance, point1, point2):
     global lastFuntion
@@ -250,10 +255,10 @@ def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance, point
     if lastFuntion == func:
         return
     print('---------------------------------')
-    print("Moving from: P%f, to P%f with velocities"  % (point1, point2))
+    print("Moving from: P%d, to P%d with velocities"  % (point1, point2))
     print("VeloLeft: ", VeloLeft)
     print("VeloRight: ", VeloRight)
-    print("Estimated Time: ", estimatedTime)
+    print("Estimated Time: %0.1f" % (estimatedTime))
     print("Distance: ", distance)
     print('---------------------------------')
     print('\n')
@@ -278,7 +283,7 @@ def callFunction(func, *args):
 # Main Control Loop for Robot
 while robot.experiment_supervisor.step(robot.timestep) != -1:
     # Move from point P1 to P2 with velocity 20 rad/sec
-    callFunction(moveForward, 2, -2, 2, -0.5, 20, -0.045, 0, 1, 0)
+    callFunction(moveForward, 2, -2, 2, -0.5, 26, -0.045, 0, 1, 0)
     
     
 

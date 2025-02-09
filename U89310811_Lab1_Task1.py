@@ -274,9 +274,6 @@ def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, point1, point2
             # Grab the current time and add to the time accumulator
             timeAccumulator += robot.experiment_supervisor.getTime() - timeAccumulator
             
-            
-            
-
             # update the step number and encoder reading and stop the robot
             stepNumber += 1
             encoderReading = robot.get_front_right_motor_encoder_reading()
@@ -284,7 +281,7 @@ def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, point1, point2
             robot.stop()
         return 1
     
-def customTurn(radius, rads, VeloLeft, VeloRight, distance, time, point1, point2, stepNum):
+def customTurn(radius, rads, VeloLeft, VeloRight, distance, time, ICCx, ICCy, point1, point2, angularVelocity, stepNum):
     global encoderReading
     global timeAccumulator
     global stepNumber
@@ -297,15 +294,17 @@ def customTurn(radius, rads, VeloLeft, VeloRight, distance, time, point1, point2
     robot.set_left_motors_velocity(VeloLeft)
     robot.set_right_motors_velocity(VeloRight)
     
-    printAnnounceValues(customTurn, VeloLeft, VeloRight, time, distance, point1, point2)
+    
+    printAnnounceValues(customTurn, VeloLeft, VeloRight, time, distance, point1, point2, 0, 0, radius, ICCx, ICCy, angularVelocity)
     printNavValues(VeloLeft, VeloRight, distance, robot.experiment_supervisor.getTime() - timeAccumulator)
         
-   # Run the motors for the time passed
-    if robot.experiment_supervisor.getTime() - timeAccumulator < time:
+    # Run the motors for the time passed
+    if robot.experiment_supervisor.getTime() - timeAccumulator > time:
         robot.stop()
+        stepNumber += 1
         return 1
-        
-def calculateCustomTurn(rightSpeed, leftSpeed, time, stepNum):
+         
+def calculateCustomTurn(rightSpeed, leftSpeed, time, x, y, point1, point2, stepNum):
     # Calculate the radius of the turn using the formula (Vr + Vl)/(Vr - Vl) * L/2
     radius = (rightSpeed + leftSpeed)/(rightSpeed - leftSpeed) * robot.axel_length/2
     
@@ -318,7 +317,16 @@ def calculateCustomTurn(rightSpeed, leftSpeed, time, stepNum):
     # Calc the distance
     distance = radius * rads
     
+    # Calc the ICCx and ICCy
+    ICCx = x - radius * math.sin((rads))
+    ICCy = y + radius * math.cos((rads))
     
+    # Convert he right and left speed to rad/s for the custom turn function
+    rightSpeed = rightSpeed / robot.wheel_radius
+    leftSpeed = leftSpeed / robot.wheel_radius
+    
+    # call the custom turn function
+    customTurn(radius, rads, leftSpeed, rightSpeed, distance, time, ICCx, ICCy, point1, point2, angularVelocity, stepNum)
     
 def printNavValues(VeloLeft, VeloRight, distance, time, skip = 0):
     global pollingCounter
@@ -328,45 +336,50 @@ def printNavValues(VeloLeft, VeloRight, distance, time, skip = 0):
         pollingCounter += 1
         return
     # Print out the values every 5 polling cycles
-    if pollingCounter % 10 == 0:
+    if pollingCounter % 20 == 0:
         print('V_li = %0.1f, V_ri = %0.1f, D = %0.1f, T = %0.1f' % (VeloLeft, VeloRight, distance, time))
     pollingCounter += 1
     
-def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance, point1, point2, adjust= 0, heading = 0, radius = 0, ICC = 0, angularVelocity = 0):
+def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance, point1, point2, adjust= 0, heading = 0, radius = 0, ICCx = 0, ICCy =0, angularVelocity = 0):
     global lastFuntion
     
     # if we are doing a custom turn print out the calcualted the values 
-    if func == customTurn:
+    if func == customTurn and lastFuntion != func:
+        print('\n ')
         print('---------------------------------')
         print("Moving from: P%d, to P%d with velocities"  % (point1, point2))
         print("VeloLeft: ", VeloLeft)
         print("VeloRight: ", VeloRight)
         print("Estimated Time: %0.1f" % (math.fabs(estimatedTime)))
         
-        # print out he radus, ICC, angular velocity, and distance
+        # print out he radus, ICC, angular velocity, distance, and degrees traveled
         print("Radius: %0.1f" % (radius))
-        print("ICC: %0.1f" % (ICC))
+        print("ICC: (%0.1f, %0.1f)" % (ICCx, ICCy))
         print("Angular Velocity: %0.1f" % (angularVelocity))
         print("Distance: %0.1f" % (distance))
+        print("Degrees Traveled: %0.1f" % (math.degrees(angularVelocity * estimatedTime)))
+        
         
         print('---------------------------------')
-        print('\n')
+        print('\n ')
         lastFuntion = func
         return
     
     if adjust == 1 and lastFuntion != func:
+        print('\n ')
         print('---------------------------------')
         print("Adjusting Heading to: %d" % heading)
         print("VeloLeft: ", VeloLeft)
         print("VeloRight: ", VeloRight)
         print('---------------------------------')
-        print('\n')
+        print('\n ')
         lastFuntion = func
         return
     
     if lastFuntion == func:
         return
-
+    
+    print('\n ')
     print('---------------------------------')
     print("Moving from: P%d, to P%d with velocities"  % (point1, point2))
     print("VeloLeft: ", VeloLeft)
@@ -374,7 +387,7 @@ def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance, point
     print("Estimated Time: %0.1f" % (math.fabs(estimatedTime)))
     print("Distance: %0.1f" % (distance))
     print('---------------------------------')
-    print('\n')
+    print('\n ')
     
     # update the last function called to prevent multiple print statements
     lastFuntion = func
@@ -389,6 +402,9 @@ def callFunction(func, *args):
         func(*args)
         
     elif func == curvedTurn and args[-1] == stepNumber:
+        func(*args)
+        
+    elif func == calculateCustomTurn and args[-1] == stepNumber:
         func(*args)
     
 # Main Control Loop for Robot
@@ -438,8 +454,8 @@ while robot.experiment_supervisor.step(robot.timestep) != -1:
     # Move forward from point P11 to P12 with velocity 20 rad/sec
     callFunction(moveForward, 1.5, 1, 0, 1.5, 10, -0.20, 11, 12, 14)
     
-    
+    # Call the custom funtion to move from point P12 to P13 with a custom turn
+    callFunction(calculateCustomTurn, 0.85, 0.24, 0.5, 0, 1, 12, 13, 15)
 
     robot.experiment_supervisor.getTime()
-    
     

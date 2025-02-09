@@ -108,10 +108,6 @@ def rotate(desiredHeading, speed, point1, point2, adjust, stepNum):
         # Calcuate the distance the robot needs to turn by using the formula (desiredHeading - currentHeading) and convert to radians
         totalRadtoMove = math.radians(tmpDesiredHeading - tmpCurrentHeading) 
         
-        
-        print("The desired heading is: ", desiredHeading)
-        print("The current heading is: ", currentHeading)
-        
         # Calculate the time it will take to reach the desired heading (2pi/|angular velocity|) also make sure angular velo is positivie
         estTime = totalRadtoMove / math.fabs(angularVelocity)
         
@@ -287,6 +283,69 @@ def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, point1, point2
 
             robot.stop()
         return 1
+    
+def customTurn(radius, rads, VeloLeft, VeloRight, distance, time, point1, point2, stepNum):
+    global encoderReading
+    global timeAccumulator
+    global stepNumber
+    
+    if stepNum == stepNumber:
+        pass
+    else:
+        return stepNumber
+    
+    # Grab reading from encoders to determine how far it has traveled
+    rightDistance = (2 * math.pi * (radius - robot.axel_length/2))*(rads/(2*math.pi))
+
+
+        
+    # Grab reading from encoders to determine how far it has traveled
+    accumulatedDis = robot.wheel_radius * robot.get_front_right_motor_encoder_reading()
+    
+    # convert encoder reading to distance
+    encoderOffset = robot.wheel_radius * encoderReading
+    
+    
+    # Set the motors to calculated speed
+    if accumulatedDis < rightDistance + encoderOffset :
+        robot.set_left_motors_velocity(VeloLeft)
+        robot.set_right_motors_velocity(VeloRight)
+        
+    # Calculate the angular velocity of the robot in order to determine the time it will take to reach the desired heading
+    # Convert the angular velocity to linear velocity
+    V_L = robot.wheel_radius * VeloLeft
+    V_R = robot.wheel_radius * VeloRight
+     
+    # Calculate the angular velocity of the robot
+    angularVelocity = (V_R - V_L)/robot.axel_length
+    
+    # Calculate the time it will take to reach the desired heading (2pi/|angular velocity|) also make sure angular velo is positivie
+    estTime = rads / math.fabs(angularVelocity)
+        
+    # print out the announce values
+    printAnnounceValues(curvedTurn, VeloLeft, VeloRight, estTime, distance, point1, point2)
+    
+    # print out the nav values
+    printNavValues(VeloLeft, VeloRight, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime() - timeAccumulator)
+
+    
+    # if the robot has traveled the distance, stop the robot
+    if(accumulatedDis > rightDistance+encoderOffset):
+        # Stop the robot and update the encoder readings only on the first time accumulatedDis > distance
+        if accumulatedDis < distance + encoderReading:
+            
+            printNavValues(VeloLeft, VeloRight, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime() - timeAccumulator, skip=1)
+            
+            # Grab the current time and add to the time accumulator
+            timeAccumulator += robot.experiment_supervisor.getTime() - timeAccumulator
+            
+        
+            # update the step number and encoder reading and stop the robot
+            stepNumber += 1
+            encoderReading = robot.get_front_right_motor_encoder_reading()
+
+            robot.stop()
+        return 1
         
 def printNavValues(VeloLeft, VeloRight, distance, time, skip = 0):
     global pollingCounter
@@ -370,22 +429,24 @@ while robot.experiment_supervisor.step(robot.timestep) != -1:
     callFunction(moveForward, -2, 2, 1.5, 2, 20, -0.25, 5, 6, 8)
 
     # Move from point P6 to P7 turning to face 7pi/4 rads
-    callFunction(rotate, math.degrees((7*math.pi)/(4)), 2, 6, 7, 0, 9)
+    callFunction(rotate, math.degrees((7*math.pi)/(4)), 4, 6, 7, 0, 9)
     
     # Move from point P7 to P8 with velocity 20 rad/sec
     callFunction(moveForward, 1.5, 2, 2, 1.5, 20, -0.1, 7, 8, 10)
     
-    ## Move from point P8 to P9 turning to face 5pi/4 rads
-    #callFunction(rotate, math.degrees(((5*math.pi)/(4))), 1, 8, 9, 0, 11)
-    #
-    ## Move forward from point P9 to P10 with velocity 20 rad/sec
-    #callFunction(moveForward, 2, 1.5, 1.5, 1, 20, -0.1, 9, 10, 12)
-    #
-    ## Move from point P10 to P11 turning to face pi rads
-    #callFunction(rotate, math.degrees(math.pi), 1, 10, 11, 0, 13)
-    #
-    ## Move forward from point P11 to P12 with velocity 20 rad/sec
-    #callFunction(moveForward, 1.5, 1, 0, 1.5, 20, -0.25, 11, 12, 14)
+    # Move from point P8 to P9 turning to face 5pi/4 rads
+    callFunction(rotate, math.degrees(((5*math.pi)/(4))-0.07), 2, 8, 9, 0, 11)
+    
+    # Move forward from point P9 to P10 with velocity 20 rad/sec
+    callFunction(moveForward, 2, 1.5, 1.5, 1, 20, -0.22, 9, 10, 12)
+    
+    # Move from point P10 to P11 turning to face pi rads
+    callFunction(rotate, math.degrees(math.pi), 2, 10, 11, 0, 13)
+    
+    # Move forward from point P11 to P12 with velocity 20 rad/sec
+    callFunction(moveForward, 1.5, 1, 0, 1.5, 10, -0.20, 11, 12, 14)
+    
+    
 
     robot.experiment_supervisor.getTime()
     

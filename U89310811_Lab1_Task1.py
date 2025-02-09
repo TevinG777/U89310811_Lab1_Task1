@@ -86,7 +86,6 @@ def rotate(desiredHeading, speed, point1, point2, adjust, stepNum):
             
             stepNumber += 1
 
-    
             return 1
     else:
         # if the desired heading is less than the current heading, turn left
@@ -113,7 +112,7 @@ def rotate(desiredHeading, speed, point1, point2, adjust, stepNum):
         printAnnounceValues(rotate, leftSpeed, rightSpeed, estTime, point1, point2, 0, adjust, desiredHeading)
         
         # Call the nav print values function to print out the values
-        printNavValues(leftSpeed, rightSpeed, 0, robot.experiment_supervisor.getTime() - timeAccumulator, skip=1)
+        printNavValues(leftSpeed, rightSpeed, 0, robot.experiment_supervisor.getTime() - timeAccumulator)
         
         # if the robot has reached the desired heading, stop the robot and update the step number to move to the next step
         if(robot.get_compass_reading() <= desiredHeading):
@@ -121,6 +120,9 @@ def rotate(desiredHeading, speed, point1, point2, adjust, stepNum):
             
             # print new line to make output look nicer
             print('\n')
+            
+            # Call the nav print values function to print out the values
+            printNavValues(leftSpeed, rightSpeed, 0, robot.experiment_supervisor.getTime() - timeAccumulator, skip=1)
             
             # Grab the current time and add to the time accumulator
             timeAccumulator += robot.experiment_supervisor.getTime()
@@ -180,11 +182,11 @@ def moveForward(startingX, startingY, endingX, endingY, velo, distanceOffset, po
             stepNumber += 1
             encoderReading = robot.get_front_right_motor_encoder_reading()
             
-            # Grab the current time and add to the time accumulator
-            timeAccumulator += robot.experiment_supervisor.getTime()
-            
             # print out the values one last time
             printNavValues(velo, velo, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime() - timeAccumulator, skip=1)
+            
+            # Grab the current time and add to the time accumulator
+            timeAccumulator += robot.experiment_supervisor.getTime()
             
             # print new line to make output look nicer
             print('\n')
@@ -263,10 +265,11 @@ def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, point1, point2
             stepNumber += 1
             encoderReading = robot.get_front_right_motor_encoder_reading()
             
+            printNavValues(VeloLeft, VeloRight, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime() - timeAccumulator, skip=1)
+            
             # Grab the current time and add to the time accumulator
             timeAccumulator += robot.experiment_supervisor.getTime()
-
-            printNavValues(VeloLeft, VeloRight, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime() - timeAccumulator, skip=1)
+            
             robot.stop()
         return 1
         
@@ -303,7 +306,7 @@ def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance, point
     print("VeloLeft: ", VeloLeft)
     print("VeloRight: ", VeloRight)
     print("Estimated Time: %0.1f" % (estimatedTime))
-    print("Distance: ", distance)
+    print("Distance: %0.1f" % (distance))
     print('---------------------------------')
     print('\n')
     

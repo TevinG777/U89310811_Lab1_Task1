@@ -250,7 +250,7 @@ def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance, point
     if lastFuntion == func:
         return
     print('---------------------------------')
-    print("Moving from: P%f, to P%f with velocities", point1, point2)
+    print("Moving from: P%f, to P%f with velocities"  % (point1, point2))
     print("VeloLeft: ", VeloLeft)
     print("VeloRight: ", VeloRight)
     print("Estimated Time: ", estimatedTime)

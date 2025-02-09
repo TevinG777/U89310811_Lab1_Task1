@@ -82,7 +82,8 @@ def rotate(desiredHeading, speed, point1, point2, adjust, stepNum):
             print('\n')
             
             # Grab the current time and add to the time accumulator
-            timeAccumulator += robot.experiment_supervisor.getTime()
+            timeAccumulator += robot.experiment_supervisor.getTime() - timeAccumulator
+            
             
             stepNumber += 1
 
@@ -125,7 +126,8 @@ def rotate(desiredHeading, speed, point1, point2, adjust, stepNum):
             printNavValues(leftSpeed, rightSpeed, 0, robot.experiment_supervisor.getTime() - timeAccumulator, skip=1)
             
             # Grab the current time and add to the time accumulator
-            timeAccumulator += robot.experiment_supervisor.getTime()
+            timeAccumulator += robot.experiment_supervisor.getTime() - timeAccumulator
+            
             
             # update the step number
             stepNumber += 1
@@ -178,15 +180,16 @@ def moveForward(startingX, startingY, endingX, endingY, velo, distanceOffset, po
         # Stop the robot and update the encoder readings only on the first time accumulatedDis > distance
         if accumulatedDis < distance+distanceOffset + 0.05 + encoderReading:
             
-            # update the step number and encoder reading and stop the robot
-            stepNumber += 1
-            encoderReading = robot.get_front_right_motor_encoder_reading()
-            
             # print out the values one last time
             printNavValues(velo, velo, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime() - timeAccumulator, skip=1)
             
             # Grab the current time and add to the time accumulator
-            timeAccumulator += robot.experiment_supervisor.getTime()
+            timeAccumulator += robot.experiment_supervisor.getTime() - timeAccumulator
+            
+            # update the step number and encoder reading and stop the robot
+            stepNumber += 1
+            encoderReading = robot.get_front_right_motor_encoder_reading()
+            
             
             # print new line to make output look nicer
             print('\n')
@@ -260,16 +263,19 @@ def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, point1, point2
     if(accumulatedDis > rightDistance+encoderOffset + distanceOffset):
         # Stop the robot and update the encoder readings only on the first time accumulatedDis > distance
         if accumulatedDis < distance + encoderReading + distanceOffset:
-
-            # update the step number and encoder reading and stop the robot
-            stepNumber += 1
-            encoderReading = robot.get_front_right_motor_encoder_reading()
             
             printNavValues(VeloLeft, VeloRight, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime() - timeAccumulator, skip=1)
             
             # Grab the current time and add to the time accumulator
-            timeAccumulator += robot.experiment_supervisor.getTime()
+            timeAccumulator += robot.experiment_supervisor.getTime() - timeAccumulator
             
+            
+            
+
+            # update the step number and encoder reading and stop the robot
+            stepNumber += 1
+            encoderReading = robot.get_front_right_motor_encoder_reading()
+
             robot.stop()
         return 1
         
@@ -330,11 +336,26 @@ while robot.experiment_supervisor.step(robot.timestep) != -1:
     # Move from point P0 to P1 with velocity 20 rad/sec
     callFunction(moveForward, 2, -2, 2, -0.5, 20, -0.045, 0, 1, 0)
     
-    # Ensure the robot is facing the correct direction before moving
+    # Ensure the robot is facing the correct direction before moving (func, desiredHeading, speed, point1, point2, adjust, stepNum)
     callFunction(rotate, 90, 2, 0, 1, 1, 1)
     
     # Move from point P1 to P2, left turn at 8 rad/sec
     callFunction(curvedTurn, 0.5, math.pi, 'left', 8, -0.045, 1, 2, 2)
+    
+    # adjust the heading of the robot to be 270 degrees 
+    callFunction(rotate, 270, 2, 1, 2, 1, 3)
+    
+    # Move from point P2 to P3 with velocity with 10 rad/sec
+    callFunction(curvedTurn, 1.5, math.pi, 'right', 10, -0.1, 2, 3, 4)
+    
+    # Adjust the heading of the robot to be 90 degrees
+    callFunction(rotate, 90, 2, 2, 3, 1, 5)
+    
+    # Move from point P3 to P4 with velocity 20 rad/sec
+    callFunction(moveForward, -2, -0.5, -2, 2, 20, -0.045, 3, 4, 6)
+    
+    # Move from poimt P4 to P5 with velocity 4 rad/sec
+    callFunction(rotate, 0, 2, 4, 5, 0, 7)
     
     
 

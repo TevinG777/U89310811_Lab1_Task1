@@ -31,8 +31,9 @@ def rotate(desiredHeading, speed, point1, point2, adjust, stepNum):
     else:
         return stepNumber
     
-    
-    
+    # round the desired heading and current heading to the nearest whole number
+    desiredHeading = round(desiredHeading)
+
     # normalize the 0-360 degree heading to -180 to 180 degrees in order to calculate the shortest path
     tmpDesiredHeading = (desiredHeading + 180) % 360 -180
     
@@ -66,7 +67,7 @@ def rotate(desiredHeading, speed, point1, point2, adjust, stepNum):
         estTime = totalRadtoRemove / math.fabs(angularVelocity)
         
         # Call the announce values function to print out the values
-        printAnnounceValues(rotate, leftSpeed, rightSpeed, estTime, point1, point2, 0, adjust, desiredHeading)
+        printAnnounceValues(rotate, leftSpeed, rightSpeed, estTime, 0, point1, point2, adjust, desiredHeading)
         
         # Call the nav print values function to print out the values
         printNavValues(leftSpeed, rightSpeed, 0, robot.experiment_supervisor.getTime() - timeAccumulator)
@@ -110,7 +111,7 @@ def rotate(desiredHeading, speed, point1, point2, adjust, stepNum):
         estTime = totalRadtoRemove / math.fabs(angularVelocity)
         
         # Call the announce values function to print out the values
-        printAnnounceValues(rotate, leftSpeed, rightSpeed, estTime, point1, point2, 0, adjust, desiredHeading)
+        printAnnounceValues(rotate, leftSpeed, rightSpeed, estTime, 0, point1, point2, adjust, desiredHeading)
         
         # Call the nav print values function to print out the values
         printNavValues(leftSpeed, rightSpeed, 0, robot.experiment_supervisor.getTime() - timeAccumulator)
@@ -360,7 +361,14 @@ while robot.experiment_supervisor.step(robot.timestep) != -1:
     # Move from point P5 to P6 with velocity 20 rad/sec
     callFunction(moveForward, -2, 2, 1.5, 2, 20, -0.35, 5, 6, 8)
 
+    # Move from point P6 to P7 turning to face 7pi/4 rads
+    callFunction(rotate, math.degrees((7*math.pi)/(4)), 1, 6, 7, 0, 9)
     
+    # Move from point P7 to P8 with velocity 20 rad/sec
+    callFunction(moveForward, 1.5, 2, 2, 1.5, 20, -0.1, 7, 8, 10)
+    
+    # Move from point P8 to P9 turning to face 5pi/4 rads
+    #callFunction(rotate, math.degrees((5*math.pi)/(4)), 1, 8, 9, 0, 11)
 
     robot.experiment_supervisor.getTime()
     

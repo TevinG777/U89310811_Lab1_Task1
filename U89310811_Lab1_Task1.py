@@ -293,60 +293,33 @@ def customTurn(radius, rads, VeloLeft, VeloRight, distance, time, point1, point2
         pass
     else:
         return stepNumber
-    
-    # Grab reading from encoders to determine how far it has traveled
-    rightDistance = (2 * math.pi * (radius - robot.axel_length/2))*(rads/(2*math.pi))
 
-
+    robot.set_left_motors_velocity(VeloLeft)
+    robot.set_right_motors_velocity(VeloRight)
+    
+    printAnnounceValues(customTurn, VeloLeft, VeloRight, time, distance, point1, point2)
+    printNavValues(VeloLeft, VeloRight, distance, robot.experiment_supervisor.getTime() - timeAccumulator)
         
-    # Grab reading from encoders to determine how far it has traveled
-    accumulatedDis = robot.wheel_radius * robot.get_front_right_motor_encoder_reading()
-    
-    # convert encoder reading to distance
-    encoderOffset = robot.wheel_radius * encoderReading
-    
-    
-    # Set the motors to calculated speed
-    if accumulatedDis < rightDistance + encoderOffset :
-        robot.set_left_motors_velocity(VeloLeft)
-        robot.set_right_motors_velocity(VeloRight)
-        
-    # Calculate the angular velocity of the robot in order to determine the time it will take to reach the desired heading
-    # Convert the angular velocity to linear velocity
-    V_L = robot.wheel_radius * VeloLeft
-    V_R = robot.wheel_radius * VeloRight
-     
-    # Calculate the angular velocity of the robot
-    angularVelocity = (V_R - V_L)/robot.axel_length
-    
-    # Calculate the time it will take to reach the desired heading (2pi/|angular velocity|) also make sure angular velo is positivie
-    estTime = rads / math.fabs(angularVelocity)
-        
-    # print out the announce values
-    printAnnounceValues(curvedTurn, VeloLeft, VeloRight, estTime, distance, point1, point2)
-    
-    # print out the nav values
-    printNavValues(VeloLeft, VeloRight, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime() - timeAccumulator)
-
-    
-    # if the robot has traveled the distance, stop the robot
-    if(accumulatedDis > rightDistance+encoderOffset):
-        # Stop the robot and update the encoder readings only on the first time accumulatedDis > distance
-        if accumulatedDis < distance + encoderReading:
-            
-            printNavValues(VeloLeft, VeloRight, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime() - timeAccumulator, skip=1)
-            
-            # Grab the current time and add to the time accumulator
-            timeAccumulator += robot.experiment_supervisor.getTime() - timeAccumulator
-            
-        
-            # update the step number and encoder reading and stop the robot
-            stepNumber += 1
-            encoderReading = robot.get_front_right_motor_encoder_reading()
-
-            robot.stop()
+   # Run the motors for the time passed
+    if robot.experiment_supervisor.getTime() - timeAccumulator < time:
+        robot.stop()
         return 1
         
+def calculateCustomTurn(rightSpeed, leftSpeed, time, stepNum):
+    # Calculate the radius of the turn using the formula (Vr + Vl)/(Vr - Vl) * L/2
+    radius = (rightSpeed + leftSpeed)/(rightSpeed - leftSpeed) * robot.axel_length/2
+    
+    # Calcualte the angular velocity of the robot using the formula (Vr - Vl)/L
+    angularVelocity = (rightSpeed - leftSpeed)/robot.axel_length
+    
+    # Calculte the amount of radians the robot needs to turn using the formula angularVelocity * time
+    rads = angularVelocity * time
+    
+    # Calc the distance
+    distance = radius * rads
+    
+    
+    
 def printNavValues(VeloLeft, VeloRight, distance, time, skip = 0):
     global pollingCounter
     
@@ -359,8 +332,27 @@ def printNavValues(VeloLeft, VeloRight, distance, time, skip = 0):
         print('V_li = %0.1f, V_ri = %0.1f, D = %0.1f, T = %0.1f' % (VeloLeft, VeloRight, distance, time))
     pollingCounter += 1
     
-def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance, point1, point2, adjust= 0, heading = 0):
+def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance, point1, point2, adjust= 0, heading = 0, radius = 0, ICC = 0, angularVelocity = 0):
     global lastFuntion
+    
+    # if we are doing a custom turn print out the calcualted the values 
+    if func == customTurn:
+        print('---------------------------------')
+        print("Moving from: P%d, to P%d with velocities"  % (point1, point2))
+        print("VeloLeft: ", VeloLeft)
+        print("VeloRight: ", VeloRight)
+        print("Estimated Time: %0.1f" % (math.fabs(estimatedTime)))
+        
+        # print out he radus, ICC, angular velocity, and distance
+        print("Radius: %0.1f" % (radius))
+        print("ICC: %0.1f" % (ICC))
+        print("Angular Velocity: %0.1f" % (angularVelocity))
+        print("Distance: %0.1f" % (distance))
+        
+        print('---------------------------------')
+        print('\n')
+        lastFuntion = func
+        return
     
     if adjust == 1 and lastFuntion != func:
         print('---------------------------------')

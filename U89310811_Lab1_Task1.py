@@ -22,7 +22,7 @@ robot.load_environment(maze_file)
 # Move robot to a random staring position listed in maze file
 robot.move_to_start()
 
-def rotate(desiredHeading, speed, point1, point2, stepNum):
+def rotate(desiredHeading, speed, point1, point2, adjust, stepNum):
     global stepNumber
     
     if stepNum == stepNumber:
@@ -56,13 +56,16 @@ def rotate(desiredHeading, speed, point1, point2, stepNum):
         V_R = robot.wheel_radius * rightSpeed
         
         # Calculate the angular velocity of the robot
-        angularVelocity = (V_R - V_L)/robot.axel_length
+        angularVelocity = (V_L - V_R)/robot.axel_length
+        
+        # Calcuate the distance the robot needs to turn by using the formula (desiredHeading - currentHeading) and convert to radians
+        totalRadtoRemove = math.radians(tmpDesiredHeading - tmpCurrentHeading) 
         
         # Calculate the time it will take to reach the desired heading (2pi/|angular velocity|) also make sure angular velo is positivie
-        estTime = 2*math.pi / math.fabs(angularVelocity)
+        estTime = totalRadtoRemove / math.fabs(angularVelocity)
         
         # Call the announce values function to print out the values
-        printAnnounceValues(rotate, leftSpeed, rightSpeed, estTime, point1, point2, 0)
+        printAnnounceValues(rotate, leftSpeed, rightSpeed, estTime, point1, point2, 0, adjust, desiredHeading)
         
         # Call the nav print values function to print out the values
         printNavValues(leftSpeed, rightSpeed, 0, robot.experiment_supervisor.getTime())
@@ -93,11 +96,14 @@ def rotate(desiredHeading, speed, point1, point2, stepNum):
         # Calculate the angular velocity of the robot
         angularVelocity = (V_R - V_L)/robot.axel_length
         
+        # Calcuate the distance the robot needs to turn by using the formula (desiredHeading - currentHeading) and convert to radians
+        totalRadtoRemove = math.radians(tmpDesiredHeading - tmpCurrentHeading) 
+        
         # Calculate the time it will take to reach the desired heading (2pi/|angular velocity|) also make sure angular velo is positivie
-        estTime = 2*math.pi / math.fabs(angularVelocity)
+        estTime = totalRadtoRemove / math.fabs(angularVelocity)
         
         # Call the announce values function to print out the values
-        printAnnounceValues(rotate, leftSpeed, rightSpeed, estTime, point1, point2, 0)
+        printAnnounceValues(rotate, leftSpeed, rightSpeed, estTime, point1, point2, 0, adjust, desiredHeading)
         
         # Call the nav print values function to print out the values
         printNavValues(leftSpeed, rightSpeed, 0, robot.experiment_supervisor.getTime())
@@ -245,15 +251,26 @@ def printNavValues(VeloLeft, VeloRight, distance, time):
     global pollingCounter
     
     # Print out the values every 5 polling cycles
-    if pollingCounter % 5 == 0:
+    if pollingCounter % 10 == 0:
         print('V_li = %0.1f, V_ri = %0.1f, D = %0.1f, T = %0.1f' % (VeloLeft, VeloRight, distance, time))
     pollingCounter += 1
     
-def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance, point1, point2):
+def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance, point1, point2, adjust= 0, heading = 0):
     global lastFuntion
+    
+    if adjust == 1:
+        print('---------------------------------')
+        print("Adjusting Heading to: %d" % heading)
+        print("VeloLeft: ", VeloLeft)
+        print("VeloRight: ", VeloRight)
+        print('---------------------------------')
+        print('\n')
+        lastFuntion = func
+        return
     
     if lastFuntion == func:
         return
+
     print('---------------------------------')
     print("Moving from: P%d, to P%d with velocities"  % (point1, point2))
     print("VeloLeft: ", VeloLeft)
@@ -281,10 +298,10 @@ def callFunction(func, *args):
 # Main Control Loop for Robot
 while robot.experiment_supervisor.step(robot.timestep) != -1:
     # Move from point P1 to P2 with velocity 20 rad/sec
-    callFunction(moveForward, 2, -2, 2, -0.5, 10, -0.045, 0, 1, 0)
+    callFunction(moveForward, 2, -2, 2, -0.5, 20, -0.045, 0, 1, 0)
     
     # Ensure the robot is facing the correct direction before moving
-    callFunction(rotate, 90, 2, 0, 1, 1)
+    callFunction(rotate, 90, 2, 0, 1, 1, 1)
     
     
 

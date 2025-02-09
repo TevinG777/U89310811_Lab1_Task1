@@ -2,12 +2,12 @@
 from fairis_tools.my_robot import MyRobot
 import math
 
-stepCounter = 0
+# Global Variables
 pollingCounter = 0
 encoderReading = 0
-totalRadtoRemove = 0
 stepNumber = 0
 lastFuntion = ''
+timeAccumulator = 0
 
 
 max_linear_velocity = 1.118
@@ -24,6 +24,7 @@ robot.move_to_start()
 
 def rotate(desiredHeading, speed, point1, point2, adjust, stepNum):
     global stepNumber
+    global timeAccumulator
     
     if stepNum == stepNumber:
         pass
@@ -77,6 +78,9 @@ def rotate(desiredHeading, speed, point1, point2, adjust, stepNum):
             # print new line to make output look nicer
             print('\n')
             
+            # Grab the current time and add to the time accumulator
+            timeAccumulator += robot.experiment_supervisor.getTime()
+            
             stepNumber += 1
 
     
@@ -114,6 +118,11 @@ def rotate(desiredHeading, speed, point1, point2, adjust, stepNum):
             
             # print new line to make output look nicer
             print('\n')
+            
+            # Grab the current time and add to the time accumulator
+            timeAccumulator += robot.experiment_supervisor.getTime()
+            
+            # update the step number
             stepNumber += 1
             
             return 1
@@ -122,6 +131,7 @@ def moveForward(startingX, startingY, endingX, endingY, velo, distanceOffset, po
     
     global encoderReading
     global stepNumber
+    global timeAccumulator
     
     
     if stepNum == stepNumber:
@@ -167,6 +177,9 @@ def moveForward(startingX, startingY, endingX, endingY, velo, distanceOffset, po
             stepNumber += 1
             encoderReading = robot.get_front_right_motor_encoder_reading()
             
+            # Grab the current time and add to the time accumulator
+            timeAccumulator += robot.experiment_supervisor.getTime()
+            
             # print new line to make output look nicer
             print('\n')
             
@@ -176,7 +189,7 @@ def moveForward(startingX, startingY, endingX, endingY, velo, distanceOffset, po
         
 def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, point1, point2, stepNum):
     global encoderReading
-    global pollingCounter 
+    global timeAccumulator
     global stepNumber
     
     if stepNum == stepNumber:
@@ -226,7 +239,7 @@ def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, point1, point2
     angularVelocity = (V_R - V_L)/robot.axel_length
     
     # Calculate the time it will take to reach the desired heading (2pi/|angular velocity|) also make sure angular velo is positivie
-    estTime = 2*math.pi / math.fabs(angularVelocity)
+    estTime = rads / math.fabs(angularVelocity)
         
     # print out the announce values
     printAnnounceValues(curvedTurn, VeloLeft, VeloRight, estTime, distance, point1, point2)
@@ -243,6 +256,9 @@ def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, point1, point2
             # update the step number and encoder reading and stop the robot
             stepNumber += 1
             encoderReading = robot.get_front_right_motor_encoder_reading()
+            
+            # Grab the current time and add to the time accumulator
+            timeAccumulator += robot.experiment_supervisor.getTime()
 
             robot.stop()
         return 1
@@ -297,11 +313,14 @@ def callFunction(func, *args):
     
 # Main Control Loop for Robot
 while robot.experiment_supervisor.step(robot.timestep) != -1:
-    # Move from point P1 to P2 with velocity 20 rad/sec
+    # Move from point P0 to P1 with velocity 20 rad/sec
     callFunction(moveForward, 2, -2, 2, -0.5, 20, -0.045, 0, 1, 0)
     
     # Ensure the robot is facing the correct direction before moving
     callFunction(rotate, 90, 2, 0, 1, 1, 1)
+    
+    # Move from point P1 to P2, left turn at 8 rad/sec
+    callFunction(curvedTurn, 0.5, math.pi, 'left', 8, -0.045, 1, 2, 2)
     
     
 

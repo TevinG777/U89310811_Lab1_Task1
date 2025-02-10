@@ -5,12 +5,10 @@ import math
 # Global Variables
 pollingCounter = 0
 encoderReading = 0
+encoderReadingLeft = 0
 stepNumber = 0
 lastFuntion = ''
 timeAccumulator = 0
-
-
-max_linear_velocity = 1.118
 
 # Create the robot instance.
 robot = MyRobot()
@@ -139,6 +137,7 @@ def rotate(desiredHeading, speed, point1, point2, adjust, stepNum):
 def moveForward(startingX, startingY, endingX, endingY, velo, distanceOffset, point1, point2, stepNum):
     
     global encoderReading
+    global encoderReadingLeft
     global stepNumber
     global timeAccumulator
     
@@ -159,6 +158,12 @@ def moveForward(startingX, startingY, endingX, endingY, velo, distanceOffset, po
     # Grab reading from encoders to determine how far it has traveled
     accumulatedDis = robot.wheel_radius * robot.get_front_right_motor_encoder_reading()
     
+    # grab left encoder reading
+    encoderReadingLeftDistance = robot.wheel_radius * robot.get_front_left_motor_encoder_reading()
+    
+    # Calculate the distance the left wheel has traveled
+    encoderOffsetLeft = robot.wheel_radius * encoderReadingLeft
+    
     # convert encoder reading to distance
     encoderOffset = robot.wheel_radius * encoderReading
     
@@ -176,7 +181,6 @@ def moveForward(startingX, startingY, endingX, endingY, velo, distanceOffset, po
     printAnnounceValues(moveForward, velo, velo, estTime, distance, point1, point2)
     printNavValues(velo, velo, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime() - timeAccumulator)
         
-        
     # if the robot has traveled the distance, stop the robot
     if(accumulatedDis > distance+distanceOffset+encoderOffset):
         # Stop the robot and update the encoder readings only on the first time accumulatedDis > distance
@@ -185,23 +189,25 @@ def moveForward(startingX, startingY, endingX, endingY, velo, distanceOffset, po
             # print out the values one last time
             printNavValues(velo, velo, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime() - timeAccumulator, skip=1)
             
+            # Print out the gps and encoder comparison
+            printGPSandEncoderComparison(moveForward, accumulatedDis-encoderOffset, startingX, startingY, robot.get_compass_reading())
+            
             # Grab the current time and add to the time accumulator
             timeAccumulator += robot.experiment_supervisor.getTime() - timeAccumulator
             
             # update the step number and encoder reading and stop the robot
             stepNumber += 1
             encoderReading = robot.get_front_right_motor_encoder_reading()
-            
-            
-            # print new line to make output look nicer
-            print('\n')
+            encoderReadingLeft = robot.get_front_left_motor_encoder_reading()
+        
             
             robot.stop()
             
         return 1
         
-def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, point1, point2, adjust, stepNum):
+def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, point1, point2, adjust, startX, startY,stepNum):
     global encoderReading
+    global encoderReadingLeft
     global timeAccumulator
     global stepNumber
     
@@ -240,6 +246,12 @@ def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, point1, point2
     # convert encoder reading to distance
     encoderOffset = robot.wheel_radius * encoderReading
     
+    # grab left encoder reading
+    encoderReadingLeftDistance = robot.wheel_radius * robot.get_front_left_motor_encoder_reading()
+    
+    # Calculate the distance the left wheel has traveled
+    encoderOffsetLeft = robot.wheel_radius * encoderReadingLeft
+    
     
     # Set the motors to calculated speed
     if accumulatedDis < rightDistance + encoderOffset :
@@ -271,12 +283,16 @@ def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, point1, point2
             
             printNavValues(VeloLeft, VeloRight, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime() - timeAccumulator, skip=1)
             
+            # print out the gps and encoder comparison passing the left and right
+            printGPSandEncoderComparison(curvedTurn, accumulatedDis-encoderOffset, startX, startY, robot.get_compass_reading(), direction, accumulatedDis-encoderOffset, encoderReadingLeftDistance-encoderOffsetLeft)
+            
             # Grab the current time and add to the time accumulator
             timeAccumulator += robot.experiment_supervisor.getTime() - timeAccumulator
             
             # update the step number and encoder reading and stop the robot
             stepNumber += 1
             encoderReading = robot.get_front_right_motor_encoder_reading()
+            encoderReadingLeft = robot.get_front_left_motor_encoder_reading()
 
             robot.stop()
         return 1
@@ -333,6 +349,7 @@ def printNavValues(VeloLeft, VeloRight, distance, time, skip = 0):
     
     if skip == 1:
         print('V_li = %0.1f, V_ri = %0.1f, D = %0.1f, T = %0.1f' % (VeloLeft, VeloRight, distance, time))
+        
         pollingCounter += 1
         return
     # Print out the values every 5 polling cycles
@@ -392,6 +409,61 @@ def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance, point
     # update the last function called to prevent multiple print statements
     lastFuntion = func
 
+def printGPSandEncoderComparison(func, distance, startX, startY, heading, direction = '', leftEncoder = 0, rightEncoder = 0):
+    # print out the current gps position of the robot
+    print('\n ')
+    print('GPS Position: (%0.3f, %0.3f, %0.3f)' % (robot.gps.getValues()[0], robot.gps.getValues()[1], 0))            
+    
+    if func == moveForward:
+        # Calculate the new position of the robot using the distance and heading
+        newX = startX + distance * math.cos(math.radians(heading))
+        newY = startY + distance * math.sin(math.radians(heading))
+        
+        # Print out the new position of the robot
+        print('Encoder Position: (%0.3f, %0.3f, %0.3f)' % (newX, newY, 0))
+        
+        # print out the error % associated with x, y, and z measurements
+        print('Error Percentatge: X: %0.2f %%, Y: %0.2f %%, Z: %0.2f %%' % (math.fabs((newX - robot.gps.getValues()[0])/newX)*100, math.fabs((newY - robot.gps.getValues()[1])/newY)*100, 0))
+    
+    if func == curvedTurn:
+         
+        # Calculate the ICCx and ICCy
+        radius = ((leftEncoder +rightEncoder)/(rightEncoder - leftEncoder)) * robot.axel_length/2
+        
+        # if the direciton is right make the radius negative
+        if direction == 'right':
+            radius = -math.fabs(radius)
+        else:
+            radius = math.fabs(radius)
+        
+        # Calculate the theta value
+        theta = (rightEncoder-leftEncoder)/robot.axel_length
+        
+        # Compute the ICCx and ICCy
+        ICCx = startX - radius * math.sin(heading)
+        ICCy = startY + radius * math.cos(heading)
+        
+        # Calculate the new position of the robot using the distance and heading
+        newX = math.cos(theta) * (startX - ICCx) - math.sin(theta) * (startY - ICCy) + ICCx
+        newY = math.sin(theta) * (startX - ICCx) + math.cos(theta) * (startY - ICCy) + ICCy
+        
+        # Print out the new position of the robot
+        print('Encoder Position: (%0.3f, %0.3f, %0.3f)' % (newX, newY, 0))
+        
+        # print out the error % associated with x, y, and z measurements
+        print('Error Percentatge: X: %0.2f %%, Y: %0.2f %%, Z: %0.2f %%' % (math.fabs((newX - robot.gps.getValues()[0])/newX)*100, math.fabs((newY - robot.gps.getValues()[1])/newY)*100, 0))
+        
+        
+        
+    if func == rotate:
+        # Print out the new position of the robot
+        print('Encoder Position: (%0.3f, %0.3f, %0.3f)' % (startX, startY, 0))
+        
+        # print out the error % associated with x, y, and z measurements
+        print('Error Percentatge: X: %0.2f %%, Y: %0.2f %%, Z: %0.2f %%' % (math.fabs((startX - robot.gps.getValues()[0])/startX)*100, math.fabs((startY - robot.gps.getValues()[1])/startY)*100, 0))
+        
+    print('\n ')
+                 
 def callFunction(func, *args):
     global stepNumber
     
@@ -414,48 +486,48 @@ while robot.experiment_supervisor.step(robot.timestep) != -1:
     
     # Ensure the robot is facing the correct direction before moving (func, desiredHeading, speed, point1, point2, adjust, stepNum)
     callFunction(rotate, 90, 1, 0, 1, 1, 1)
-    
+    #
     # Move from point P1 to P2, left turn at 8 rad/sec
-    callFunction(curvedTurn, 0.5, math.pi, 'left', 20, -0.15, 1, 2, 0, 2)
+    callFunction(curvedTurn, 0.5, math.pi, 'left', 20, -0.15, 1, 2, 0, 2, -0.5, 2)
     
     # adjust the heading of the robot to be 270 degrees 
-    callFunction(rotate, 270, 1, 1, 2, 1, 3)
-    
-    # Move from point P2 to P3 with velocity with 10 rad/sec
-    callFunction(curvedTurn, 1.5, math.pi, 'right', 20, -0.3, 2, 3, 0.1, 4)
-    
-    # Adjust the heading of the robot to be 90 degrees
-    callFunction(rotate, 90, 1, 2, 3, 1, 5)
-    
-    # Move from point P3 to P4 with velocity 20 rad/sec
-    callFunction(moveForward, -2, -0.5, -2, 2, 15, 0, 3, 4, 6)
-    
-    ## Move from poimt P4 to P5 with velocity 4 rad/sec adding an offset because the heading is not perfect
-    callFunction(rotate, 0, 2, 4, 5, 0, 7)
-    
-    # Move from point P5 to P6 with velocity 20 rad/sec
-    callFunction(moveForward, -2, 2, 1.5, 2, 20, -0.25, 5, 6, 8)
-
-    # Move from point P6 to P7 turning to face 7pi/4 rads
-    callFunction(rotate, math.degrees((7*math.pi)/(4)), 4, 6, 7, 0, 9)
-    
-    # Move from point P7 to P8 with velocity 20 rad/sec
-    callFunction(moveForward, 1.5, 2, 2, 1.5, 20, -0.1, 7, 8, 10)
-    
-    # Move from point P8 to P9 turning to face 5pi/4 rads
-    callFunction(rotate, math.degrees(((5*math.pi)/(4))-0.07), 2, 8, 9, 0, 11)
-    
-    # Move forward from point P9 to P10 with velocity 20 rad/sec
-    callFunction(moveForward, 2, 1.5, 1.5, 1, 20, -0.22, 9, 10, 12)
-    
-    # Move from point P10 to P11 turning to face pi rads
-    callFunction(rotate, math.degrees(math.pi), 2, 10, 11, 0, 13)
-    
-    # Move forward from point P11 to P12 with velocity 20 rad/sec
-    callFunction(moveForward, 1.5, 1, 0, 1.5, 10, -0.20, 11, 12, 14)
-    
-    # Call the custom funtion to move from point P12 to P13 with a custom turn
-    callFunction(calculateCustomTurn, 0.85, 0.24, 0.5, 0, 1, 12, 13, 15)
+    #callFunction(rotate, 270, 1, 1, 2, 1, 3)
+    #
+    ## Move from point P2 to P3 with velocity with 10 rad/sec
+    #callFunction(curvedTurn, 1.5, math.pi, 'right', 20, -0.3, 2, 3, 0.1, 4)
+    #
+    ## Adjust the heading of the robot to be 90 degrees
+    #callFunction(rotate, 90, 1, 2, 3, 1, 5)
+    #
+    ## Move from point P3 to P4 with velocity 20 rad/sec
+    #callFunction(moveForward, -2, -0.5, -2, 2, 15, 0, 3, 4, 6)
+    #
+    ### Move from poimt P4 to P5 with velocity 4 rad/sec adding an offset because the heading is not perfect
+    #callFunction(rotate, 0, 2, 4, 5, 0, 7)
+    #
+    ## Move from point P5 to P6 with velocity 20 rad/sec
+    #callFunction(moveForward, -2, 2, 1.5, 2, 20, -0.25, 5, 6, 8)
+#
+    ## Move from point P6 to P7 turning to face 7pi/4 rads
+    #callFunction(rotate, math.degrees((7*math.pi)/(4)), 4, 6, 7, 0, 9)
+    #
+    ## Move from point P7 to P8 with velocity 20 rad/sec
+    #callFunction(moveForward, 1.5, 2, 2, 1.5, 20, -0.1, 7, 8, 10)
+    #
+    ## Move from point P8 to P9 turning to face 5pi/4 rads
+    #callFunction(rotate, math.degrees(((5*math.pi)/(4))-0.07), 2, 8, 9, 0, 11)
+    #
+    ## Move forward from point P9 to P10 with velocity 20 rad/sec
+    #callFunction(moveForward, 2, 1.5, 1.5, 1, 20, -0.22, 9, 10, 12)
+    #
+    ## Move from point P10 to P11 turning to face pi rads
+    #callFunction(rotate, math.degrees(math.pi), 2, 10, 11, 0, 13)
+    #
+    ## Move forward from point P11 to P12 with velocity 20 rad/sec
+    #callFunction(moveForward, 1.5, 1, 0, 1.5, 10, -0.20, 11, 12, 14)
+    #
+    ## Call the custom funtion to move from point P12 to P13 with a custom turn
+    #callFunction(calculateCustomTurn, 0.85, 0.24, 0.5, 0, 1, 12, 13, 15)
 
     robot.experiment_supervisor.getTime()
     

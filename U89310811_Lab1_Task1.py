@@ -1,3 +1,9 @@
+# Tevin Gajadhar
+# U89310811
+# Lab 1 Task 1
+# February 10, 2024
+
+
 # Import MyRobot Class
 from fairis_tools.my_robot import MyRobot
 import math

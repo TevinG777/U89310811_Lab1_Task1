@@ -569,7 +569,7 @@ while robot.experiment_supervisor.step(robot.timestep) != -1:
     callFunction(rotate, math.degrees(math.pi), 2, 10, 11, 0, 1.5, 1.0, 13)
     
     # Move forward from point P11 to P12 with velocity 20 rad/sec
-    callFunction(moveForward, 1.5, 1, 0, 1, 20, -0.23, 11, 12, 14)
+    callFunction(moveForward, 1.5, 1, 0, 1, 20, -0.16, 11, 12, 14)
     
     # Call the custom funtion to move from point P12 to P13 with a custom turn
     callFunction(calculateCustomTurn, 0.85, 0.24, 0.5, 0, 1, 12, 13, 15)

@@ -161,21 +161,10 @@ def moveForward(startingX, startingY, endingX, endingY, velo, distanceOffset, po
     else:
         return stepNumber
 
-    # print starting and ending points
-    print('Starting Point: (%0.2f, %0.2f)' % (startingX, startingY))
-    print('Ending Point: (%0.2f, %0.2f)' % (endingX, endingY))
-    
-    
     # calculate the distance traveled between the points using the distance formula
     xComponent = math.pow((endingX-startingX),2)
     yComponent = math.pow((endingY-startingY),2)
     distance = math.sqrt(xComponent+yComponent)
-    
-    
-    
-    print(" The distance is %0.2f" % distance)
-
-    
     
     # Grab reading from encoders to determine how far it has traveled
     accumulatedDis = robot.wheel_radius * robot.get_front_right_motor_encoder_reading()

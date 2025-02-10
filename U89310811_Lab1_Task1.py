@@ -161,11 +161,19 @@ def moveForward(startingX, startingY, endingX, endingY, velo, distanceOffset, po
     else:
         return stepNumber
 
+    # print starting and ending points
+    print('Starting Point: (%0.2f, %0.2f)' % (startingX, startingY))
+    print('Ending Point: (%0.2f, %0.2f)' % (endingX, endingY))
+    
     
     # calculate the distance traveled between the points using the distance formula
     xComponent = math.pow((endingX-startingX),2)
     yComponent = math.pow((endingY-startingY),2)
     distance = math.sqrt(xComponent+yComponent)
+    
+    
+    
+    print(" The distance is %0.2f" % distance)
 
     
     
@@ -572,7 +580,7 @@ while robot.experiment_supervisor.step(robot.timestep) != -1:
     callFunction(rotate, math.degrees(math.pi), 2, 10, 11, 0, 1.5, 1.0, 13)
     
     # Move forward from point P11 to P12 with velocity 20 rad/sec
-    callFunction(moveForward, 1.5, 1, 0, 1.5, 20, -0.23, 11, 12, 14)
+    callFunction(moveForward, 1.5, 1, 0, 1, 20, -0.23, 11, 12, 14)
     
     # Call the custom funtion to move from point P12 to P13 with a custom turn
     callFunction(calculateCustomTurn, 0.85, 0.24, 0.5, 0, 1, 12, 13, 15)

@@ -456,7 +456,7 @@ def printGPSandEncoderComparison(func, distance, startX, startY, heading, direct
         print('Encoder Position: (%0.3f, %0.3f, %0.3f)' % (newX, newY, 0))
         
         # print out the error associated with x, y, and z measurements
-        print('Error: X: %0.2f, Y: %0.2f, Z: %0.2f' % ((newX - robot.gps.getValues()[0]), math.fabs((newY - robot.gps.getValues()[1])), 0))
+        print('Error: X: %0.2f, Y: %0.2f, Z: %0.2f' % ((newX - robot.gps.getValues()[0]), ((newY - robot.gps.getValues()[1])), 0))
     
     if func == curvedTurn or func == customTurn:
          
@@ -484,7 +484,7 @@ def printGPSandEncoderComparison(func, distance, startX, startY, heading, direct
         print('Encoder Position: (%0.3f, %0.3f, %0.3f)' % (newX, newY, 0))
         
         # print out the error associated with x, y, and z measurements
-        print('Error: X: %0.2f, Y: %0.2f, Z: %0.2f' % ((newX - robot.gps.getValues()[0]), math.fabs((newY - robot.gps.getValues()[1])), 0))
+        print('Error: X: %0.2f, Y: %0.2f, Z: %0.2f' % ((newX - robot.gps.getValues()[0]), ((newY - robot.gps.getValues()[1])), 0))
          
     if func == rotate:
         # Print out the new position of the robot
@@ -503,7 +503,6 @@ def printFinalMetrics():
     print('Distance: %0.2f meters' % (distanceTotal))  
     
     exit()  
-    
     
 def callFunction(func, *args):
     global stepNumber

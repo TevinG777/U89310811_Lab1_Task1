@@ -381,13 +381,13 @@ def printNavValues(VeloLeft, VeloRight, distance, time, skip = 0):
     global pollingCounter
     
     if skip == 1:
-        print('V_li = %0.1f, V_ri = %0.1f, D = %0.2f, T = %0.1f' % (VeloLeft, VeloRight, distance, math.fabs(time)))
+        print('V_li = %0.1f rad/s,, V_ri = %0.1f rad/s, D = %0.2f m, T = %0.1f s' % (VeloLeft, VeloRight, distance, math.fabs(time)))
         
         pollingCounter += 1
         return
     # Print out the values every 5 polling cycles
     if pollingCounter % 30 == 0:
-        print('V_li = %0.1f, V_ri = %0.1f, D = %0.2f, T = %0.1f' % (VeloLeft, VeloRight, distance, math.fabs(time)))
+        print('V_li = %0.1f rad/s,, V_ri = %0.1f rad/s,, D = %0.2f m, T = %0.1f s' % (VeloLeft, VeloRight, distance, math.fabs(time)))
     pollingCounter += 1
     
 def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance, point1, point2, adjust= 0, heading = 0, radius = 0, ICCx = 0, ICCy =0, angularVelocity = 0):
@@ -398,15 +398,15 @@ def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance, point
         print('\n ')
         print('---------------------------------')
         print("Moving from: P%d, to P%d with velocities"  % (point1, point2))
-        print("VeloLeft: %0.2f" % (VeloLeft))
-        print("VeloRight: %0.2f" % (VeloRight))
-        print("Estimated Time: %0.1f" % (math.fabs(estimatedTime)))
+        print("VeloLeft: %0.2f rad/s" % (VeloLeft))
+        print("VeloRight: %0.2f rad/s" % (VeloRight))
+        print("Estimated Time: %0.1f s" % (math.fabs(estimatedTime)))
         
         # print out he radus, ICC, angular velocity, distance, and degrees traveled
-        print("Radius: %0.1f" % (radius))
+        print("Radius: %0.1f m" % (radius))
         print("ICC: (%0.1f, %0.1f)" % (ICCx, ICCy))
-        print("Angular Velocity: %0.1f" % (angularVelocity))
-        print("Distance: %0.1f" % (distance))
+        print("Angular Velocity: %0.1f m/s" % (angularVelocity))
+        print("Distance: %0.1f m" % (distance))
         print("Degrees Traveled: %0.1f" % (math.degrees(angularVelocity * estimatedTime)))
         
         
@@ -419,8 +419,8 @@ def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance, point
         print('\n ')
         print('---------------------------------')
         print("Adjusting Heading to: %d" % heading)
-        print("VeloLeft: %0.2f" % (VeloLeft))
-        print("VeloRight: %0.2f" % (VeloRight))
+        print("VeloLeft: %0.2f rad/s," % (VeloLeft))
+        print("VeloRight: %0.2f rad/s," % (VeloRight))
         print('---------------------------------')
         print('\n ')
         lastFuntion = func
@@ -432,10 +432,10 @@ def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance, point
     print('\n ')
     print('---------------------------------')
     print("Moving from: P%d, to P%d with velocities"  % (point1, point2))
-    print("VeloLeft: %0.2f" % (VeloLeft))
-    print("VeloRight: %0.2f" % (VeloRight))
-    print("Estimated Time: %0.1f" % (math.fabs(estimatedTime)))
-    print("Distance: %0.1f" % (distance))
+    print("VeloLeft: %0.2f rad/s," % (VeloLeft))
+    print("VeloRight: %0.2f rad/s," % (VeloRight))
+    print("Estimated Time: %0.1f s" % (math.fabs(estimatedTime)))
+    print("Distance: %0.1f m" % (distance))
     print('---------------------------------')
     print('\n ')
     

@@ -147,7 +147,7 @@ def rotate(desiredHeading, speed, point1, point2, adjust, startX, startY, stepNu
             
             return 1
         
-def moveForward(startingX, startingY, endingX, endingY, velo, distanceOffset, point1, point2, stepNum):
+def moveForward(startingX, startingY, endingX, endingY, velo, point1, point2, stepNum):
     
     global encoderReading
     global distanceTotal
@@ -192,10 +192,10 @@ def moveForward(startingX, startingY, endingX, endingY, velo, distanceOffset, po
     printAnnounceValues(moveForward, velo, velo, estTime, distance, point1, point2)
     printNavValues(velo, velo, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime() - timeAccumulator)
         
-    # if the robot has traveled the distance, stop the robot
-    if(accumulatedDis > distance+distanceOffset+encoderOffset):
+    # if the robot has traveled the estimated time, stop the robot
+    if(robot.experiment_supervisor.getTime() - timeAccumulator > estTime + 0.1):
         # Stop the robot and update the encoder readings only on the first time accumulatedDis > distance
-        if accumulatedDis < distance+distanceOffset + 0.05 + encoderReading:
+        if accumulatedDis < distance + 0.05 + encoderReading:
             
             # print out the values one last time
             printNavValues(velo, velo, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime() - timeAccumulator, skip=1)
@@ -218,7 +218,7 @@ def moveForward(startingX, startingY, endingX, endingY, velo, distanceOffset, po
             
         return 1
         
-def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, point1, point2, adjust, startX, startY,stepNum):
+def curvedTurn(radius, rads, direction, maxSpeed, point1, point2, startX, startY,stepNum):
     global encoderReading
     global distanceTotal
     global encoderReadingLeft
@@ -229,9 +229,6 @@ def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, point1, point2
         pass
     else:
         return stepNumber
-    
-    # Adjust the radius of the turn to account for large turns with friction
-    radius = radius + adjust
     
     # Determine the distance the robot needs to travel to make the turn
     distance = (2 * math.pi * radius)*(rads/(2*math.pi))
@@ -291,9 +288,9 @@ def curvedTurn(radius, rads, direction, maxSpeed, distanceOffset, point1, point2
 
     
     # if the robot has traveled the distance, stop the robot
-    if(accumulatedDis > rightDistance+encoderOffset + distanceOffset):
+    if(robot.experiment_supervisor.getTime() - timeAccumulator > estTime):
         # Stop the robot and update the encoder readings only on the first time accumulatedDis > distance
-        if accumulatedDis < distance + encoderReading + distanceOffset:
+        if accumulatedDis < distance + encoderReading :
             
             printNavValues(VeloLeft, VeloRight, accumulatedDis-encoderOffset, robot.experiment_supervisor.getTime() - timeAccumulator, skip=1)
             # print out the left distance and right distance
@@ -464,16 +461,18 @@ def printGPSandEncoderComparison(func, distance, startX, startY, heading, direct
     if func == curvedTurn or func == customTurn:
          
         # Calculate the ICCx and ICCy
-        radius = ((leftEncoder +rightEncoder)/(rightEncoder - leftEncoder)) * robot.axel_length/2
+        radius = (robot.axel_length / 2) * ((leftEncoder + rightEncoder) / abs(rightEncoder - leftEncoder))
         
         # if the direciton is right make the radius negative
-        if direction == 'right':
-            radius = -math.fabs(radius)
-        else:
-            radius = math.fabs(radius)
+        if rightEncoder < leftEncoder:  # Turning right
+            radius = -abs(radius)
+        else:  # Turning left
+            radius = abs(radius)
         
         # Calculate the theta value
         theta = (rightEncoder-leftEncoder)/robot.axel_length
+        
+        print("Left Encoder: %0.2f, Right Encoder: %0.2f" % (leftEncoder, rightEncoder))
         
         # Compute the ICCx and ICCy
         ICCx = startX - radius * math.sin(heading)
@@ -527,55 +526,55 @@ def callFunction(func, *args):
 # Main Control Loop for Robot
 while robot.experiment_supervisor.step(robot.timestep) != -1:
     # Move from point P0 to P1 with velocity 20 rad/sec
-    callFunction(moveForward, 2, -2, 2, -0.5, 20, -0.045, 0, 1, 0)
+    callFunction(moveForward, 2, -2, 2, -0.5, 20, 0, 1, 0)
     
     # Ensure the robot is facing the correct direction before moving (func, desiredHeading, speed, point1, point2, adjust, stepNum)
-    callFunction(rotate, 90, 1, 0, 1, 1, 2, -0.5, 1)
-    #
+    callFunction(rotate, 90, 1, 0, 1, 1, 2, 0, 1)
+    
     # Move from point P1 to P2, left turn at 8 rad/sec
-    callFunction(curvedTurn, 0.5, math.pi, 'left', 20, -0.15, 1, 2, 0, 2, -0.5, 2)
+    callFunction(curvedTurn, 0.5, math.pi, 'left', 10, 1, 2, 2, -0.5, 2)
     
     # adjust the heading of the robot to be 270 degrees 
     callFunction(rotate, 270, 1, 1, 2, 1, 1, -0.5, 3)
     
-    # Move from point P2 to P3 with velocity with 10 rad/sec
-    callFunction(curvedTurn, 1.5, math.pi, 'right', 20, -0.3, 2, 3, 0.1, 1, -0.5, 4)
+    # Move from point P2 to P3 with velocity with 8 rad/sec
+    callFunction(curvedTurn, 1.5, math.pi, 'right', 8, 2, 3, 1, -0.5, 4)
     
     # Adjust the heading of the robot to be 90 degrees
     callFunction(rotate, 90, 1, 2, 3, 1, -2, -0.5, 5)
     
-    # Move from point P3 to P4 with velocity 20 rad/sec
-    callFunction(moveForward, -2, -0.5, -2, 2, 15, 0, 3, 4, 6)
+    # Move from point P3 to P4 with velocity 15 rad/sec
+    callFunction(moveForward, -2, -0.5, -2, 2, 10, 3, 4, 6)
     
-    ## Move from poimt P4 to P5 with velocity 4 rad/sec adding an offset because the heading is not perfect
+    # Move from poimt P4 to P5 with velocity 4 rad/sec adding an offset because the heading is not perfect
     callFunction(rotate, 0, 2, 4, 5, 0, -2, 2, 7)
     
     # Move from point P5 to P6 with velocity 20 rad/sec
-    callFunction(moveForward, -2, 2, 1.5, 2, 20, -0.25, 5, 6, 8)
+    callFunction(moveForward, -2, 2, 1.5, 2, 3, 5, 6, 8)
 
     # Move from point P6 to P7 turning to face 7pi/4 rads
     callFunction(rotate, math.degrees((7*math.pi)/(4)), 4, 6, 7, 0, 1.5, 2.0, 9)
     
     # Move from point P7 to P8 with velocity 20 rad/sec
-    callFunction(moveForward, 1.5, 2, 2, 1.5, 20, -0.1, 7, 8, 10)
+    callFunction(moveForward, 1.5, 2, 2, 1.5, 15, 7, 8, 10)
     
-    # Move from point P8 to P9 turning to face 5pi/4 rads
-    callFunction(rotate, math.degrees(((5*math.pi)/(4))-0.07), 2, 8, 9, 0, 2, 1.5, 11)
-    
-    # Move forward from point P9 to P10 with velocity 20 rad/sec
-    callFunction(moveForward, 2, 1.5, 1.5, 1, 20, -0.22, 9, 10, 12)
-    
-    # Move from point P10 to P11 turning to face pi rads
-    callFunction(rotate, math.degrees(math.pi), 2, 10, 11, 0, 1.5, 1.0, 13)
-    
-    # Move forward from point P11 to P12 with velocity 20 rad/sec
-    callFunction(moveForward, 1.5, 1, 0, 1, 20, -0.16, 11, 12, 14)
-    
-    # Call the custom funtion to move from point P12 to P13 with a custom turn
-    callFunction(calculateCustomTurn, 0.85, 0.24, 0.5, 0, 1, 12, 13, 15)
-    
-    # print out the final time and distance the robot has traveled by callign new function
-    callFunction(printFinalMetrics, 16)
+    ## Move from point P8 to P9 turning to face 5pi/4 rads
+    #callFunction(rotate, math.degrees(((5*math.pi)/(4))-0.07), 2, 8, 9, 0, 2, 1.5, 11)
+    #
+    ## Move forward from point P9 to P10 with velocity 20 rad/sec
+    #callFunction(moveForward, 2, 1.5, 1.5, 1, 20, -0.22, 9, 10, 12)
+    #
+    ## Move from point P10 to P11 turning to face pi rads
+    #callFunction(rotate, math.degrees(math.pi), 2, 10, 11, 0, 1.5, 1.0, 13)
+    #
+    ## Move forward from point P11 to P12 with velocity 20 rad/sec
+    #callFunction(moveForward, 1.5, 1, 0, 1, 20, -0.16, 11, 12, 14)
+    #
+    ## Call the custom funtion to move from point P12 to P13 with a custom turn
+    #callFunction(calculateCustomTurn, 0.85, 0.24, 0.5, 0, 1, 12, 13, 15)
+    #
+    ## print out the final time and distance the robot has traveled by callign new function
+    #callFunction(printFinalMetrics, 16)
     
     robot.experiment_supervisor.getTime()
     

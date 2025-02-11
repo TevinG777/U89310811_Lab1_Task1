@@ -472,8 +472,6 @@ def printGPSandEncoderComparison(func, distance, startX, startY, heading, direct
         # Calculate the theta value
         theta = (rightEncoder-leftEncoder)/robot.axel_length
         
-        print("Left Encoder: %0.2f, Right Encoder: %0.2f" % (leftEncoder, rightEncoder))
-        
         # Compute the ICCx and ICCy
         ICCx = startX - radius * math.sin(heading)
         ICCy = startY + radius * math.cos(heading)

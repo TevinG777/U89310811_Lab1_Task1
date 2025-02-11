@@ -387,7 +387,7 @@ def printNavValues(VeloLeft, VeloRight, distance, time, skip = 0):
         return
     # Print out the values every 5 polling cycles
     if pollingCounter % 30 == 0:
-        print('V_li = %0.1f rad/s,, V_ri = %0.1f rad/s,, D = %0.2f m, T = %0.1f s' % (VeloLeft, VeloRight, distance, math.fabs(time)))
+        print('V_li = %0.1f rad/s,, V_ri = %0.1f rad/s, D = %0.2f m, T = %0.1f s' % (VeloLeft, VeloRight, distance, math.fabs(time)))
     pollingCounter += 1
     
 def printAnnounceValues(func,VeloLeft, VeloRight, estimatedTime, distance, point1, point2, adjust= 0, heading = 0, radius = 0, ICCx = 0, ICCy =0, angularVelocity = 0):
@@ -523,19 +523,19 @@ def callFunction(func, *args):
     
 # Main Control Loop for Robot
 while robot.experiment_supervisor.step(robot.timestep) != -1:
-    # Move from point P0 to P1 with velocity 20 rad/sec
+    # Move from point P0 to P1 with velocity 15 rad/s
     callFunction(moveForward, 2, -2, 2, -0.5, 15, 0, 1, 0)
     
     # Ensure the robot is facing the correct direction before moving (func, desiredHeading, speed, point1, point2, adjust, stepNum)
     callFunction(rotate, 90, 1, 0, 1, 1, 2, 0, 1)
     
-    # Move from point P1 to P2, left turn at 8 rad/sec
+    # Move from point P1 to P2, left turn at 10 rad/sec
     callFunction(curvedTurn, 0.5, math.pi, 'left', 10, 1, 2, 2, -0.5, 2)
     
     # adjust the heading of the robot to be 270 degrees 
     callFunction(rotate, 270, 1, 1, 2, 1, 1, -0.5, 3)
     
-    # Move from point P2 to P3 with velocity with 8 rad/sec
+    # Move from point P2 to P3 with velocity with 10 rad/sec
     callFunction(curvedTurn, 1.5, math.pi, 'right', 10, 2, 3, 1, -0.5, 4)
     
     # Adjust the heading of the robot to be 90 degrees
@@ -547,25 +547,25 @@ while robot.experiment_supervisor.step(robot.timestep) != -1:
     ## Move from poimt P4 to P5 with velocity 4 rad/sec adding an offset because the heading is not perfect
     callFunction(rotate, 0, 2, 4, 5, 0, -2, 2, 7)
     
-    # Move from point P5 to P6 with velocity 20 rad/sec
+    # Move from point P5 to P6 with velocity 15 rad/s
     callFunction(moveForward, -2, 2, 1.5, 2, 15, 5, 6, 8)
 
     # Move from point P6 to P7 turning to face 7pi/4 rads
     callFunction(rotate, math.degrees((7*math.pi)/(4)), 4, 6, 7, 0, 1.5, 2.0, 9)
     
-    ## Move from point P7 to P8 with velocity 20 rad/sec
+    ## Move from point P7 to P8 with velocity 15 rad/s
     callFunction(moveForward, 1.5, 2, 2, 1.5, 10, 7, 8, 10)
     
     # Move from point P8 to P9 turning to face 5pi/4 rads
     callFunction(rotate, math.degrees(((5*math.pi)/(4))-0.07), 2, 8, 9, 0, 2, 1.5, 11)
     
-    # Move forward from point P9 to P10 with velocity 20 rad/sec
+    # Move forward from point P9 to P10 with velocity 10 rad/s
     callFunction(moveForward, 2, 1.5, 1.5, 1, 10, 9, 10, 12)
     
     # Move from point P10 to P11 turning to face pi rads
     callFunction(rotate, math.degrees(math.pi), 2, 10, 11, 0, 1.5, 1.0, 13)
     
-    # Move forward from point P11 to P12 with velocity 20 rad/sec
+    # Move forward from point P11 to P12 with velocity 10 rad/s
     callFunction(moveForward, 1.5, 1, 0, 1, 10, 11, 12, 14)
     
     # Call the custom funtion to move from point P12 to P13 with a custom turn
